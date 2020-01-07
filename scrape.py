@@ -1,24 +1,33 @@
 """ 
 Possible considerations:
-    Host on Azure Functions to run automatically
+    Host on Azure Functions to run automatically?
 1. Connect to reddit (done)
 2. Scrape /r/buildapcsales posts (done)
     a. repeat daily
-3. Save all scraped posts to Azure Blob as JSON
+3. Save all scraped posts to Azure Blob as JSON (done)
+
+#TODO https://docs.microsoft.com/en-us/samples/azure-samples/functions-python-data-cleaning-pipeline/data-cleaning-pipeline/
  """
 import praw
-import config
 import datetime
 import pandas as pd
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+import os
 
-reddit = praw.Reddit(client_id=config.CLIENT_ID,client_secret=config.CLIENT_SECRET,user_agent=config.USER_AGENT,username=config.USERNAME,password=config.PASSWORD)
+from config import PRAW_ID, PRAW_SECRET, PRAW_AGENT, AZ_CONNECT
+
+# Define Reddit
+reddit = praw.Reddit(client_id=PRAW_ID,client_secret=PRAW_SECRET,user_agent=PRAW_AGENT)
 subreddit = reddit.subreddit('buildapcsales')
 
+# Set variables
 submissions = []
-
+today = datetime.datetime.utcnow().strftime('%m-%d-%Y') 
 lastScrape = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
 submissionCount = 0
-for submission in subreddit.new(limit=None):
+
+# Scrape
+for submission in subreddit.new(limit=5):
     # Skip posts that have expired or don't have flair
     if(submission.link_flair_text == None or submission.link_flair_text == 'Expired :table_flip:'):
         continue
@@ -30,4 +39,22 @@ print(str(submissionCount) + ' total submissions scraped')
 
 submissions = pd.DataFrame(submissions, columns=['title','flair','id','permalink','link','created'])
 todaysDate = datetime.date.today()
-jsonData = submissions.to_json(r'testFile.json')
+
+# Setup Azure Environment 
+blob_service_client = BlobServiceClient.from_connection_string(AZ_CONNECT)
+local_path = "./scrapes"
+local_file_name = '{}.json'.format(today)
+upload_file_path = os.path.join(local_path, local_file_name)
+container_name = 'scraped-reddit-data'
+
+# Export to JSON
+jsonData = submissions.to_json(upload_file_path)
+    
+# Create a blob client using the local file name as the name for the blob
+blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
+
+print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+
+# Upload the created file
+with open(upload_file_path, "rb") as data:
+    blob_client.upload_blob(data)
