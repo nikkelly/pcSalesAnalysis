@@ -1,7 +1,10 @@
 """ Config Vars """
+import os 
 
-USERNAME = 'pcsalesscrape'
-PASSWORD = 'pcsalesscrape!'
-CLIENT_ID = 'r1AFsXOiNd18yQ'
-CLIENT_SECRET = 'MoQx-rQEazCo91gRLB820EbeIK4'
-USER_AGENT = 'pcSalesScrape'
+# Reddit Variables
+PRAW_ID = os.getenv('praw_id')
+PRAW_SECRET = os.getenv('praw_secret')
+PRAW_AGENT = os.getenv('praw_agent')
+
+#Azure Variables
+AZ_CONNECT = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
