@@ -7,6 +7,7 @@ Possible considerations:
 3. Save all scraped posts to Azure Blob as JSON (done)
 
 #TODO https://docs.microsoft.com/en-us/samples/azure-samples/functions-python-data-cleaning-pipeline/data-cleaning-pipeline/
+#TODO https://github.com/wsankey/community
  """
 import praw
 import datetime
@@ -16,24 +17,27 @@ import os
 
 from config import PRAW_ID, PRAW_SECRET, PRAW_AGENT, AZ_CONNECT
 
-# Define Reddit
-reddit = praw.Reddit(client_id=PRAW_ID,client_secret=PRAW_SECRET,user_agent=PRAW_AGENT)
-subreddit = reddit.subreddit('buildapcsales')
+def reddit_instance():
+    # Define Reddit
+    reddit = praw.Reddit(client_id=PRAW_ID,client_secret=PRAW_SECRET,user_agent=PRAW_AGENT)
+    subreddit = reddit.subreddit('buildapcsales')
 
-# Set variables
-submissions = []
-today = datetime.datetime.utcnow().strftime('%m-%d-%Y') 
-lastScrape = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
-submissionCount = 0
+    # Set variables
+    submissions = []
+    today = datetime.datetime.utcnow().strftime('%m-%d-%Y') 
+    lastScrape = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    submissionCount = 0
 
-# Scrape
-for submission in subreddit.new(limit=5):
-    # Skip posts that have expired or don't have flair
-    if(submission.link_flair_text == None or submission.link_flair_text == 'Expired :table_flip:'):
-        continue
-    if(datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S') > lastScrape.strftime('%Y-%m-%d %H:%M:%S')):
-        submissions.append([submission.title, submission.link_flair_text, submission.id, submission.permalink, submission.url, datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S')])
-        submissionCount += 1
+def scrape_reddit():
+    # Scrape
+    for submission in subreddit.new(limit=5):
+        # Skip posts that have expired or don't have flair
+        if(submission.link_flair_text == None or submission.link_flair_text == 'Expired :table_flip:'):
+            continue
+        if(datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S') > lastScrape.strftime('%Y-%m-%d %H:%M:%S')):
+            submissions.append([submission.title, submission.link_flair_text, submission.id, submission.permalink, submission.url, datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S')])
+            submissionCount += 1
+
 
 print(str(submissionCount) + ' total submissions scraped')
 
