@@ -1,27 +1,25 @@
-import datetime
-import logging
+""" 
+Possible considerations:
+    Host on Azure Functions to run automatically?
+1. Connect to reddit (done)
+2. Scrape /r/buildapcsales posts (done)
+    a. repeat daily
+3. Save all scraped posts to Azure Blob as JSON (done)
+
+#TODO https://docs.microsoft.com/en-us/samples/azure-samples/functions-python-data-cleaning-pipeline/data-cleaning-pipeline/
+#TODO https://github.com/wsankey/community
+ """
 import praw
+import datetime
 import pandas as pd
-import azure.functions as func
-import os
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-import random
+import os
 
-def main(mytimer: func.TimerRequest) -> None:
-    utc_timestamp = datetime.datetime.utcnow().replace(
-        tzinfo=datetime.timezone.utc).isoformat()
-    
-    subreddit = reddit_instance()
-    submissions, today = scrape(subreddit)
-    upload_results = azure_upload(submissions,today)
-    if mytimer.past_due:
-        logging.info('The timer is past due!')
+from config import PRAW_ID, PRAW_SECRET, PRAW_AGENT, AZ_CONNECT
 
-    logging.info('Python timer trigger function ran at %s', utc_timestamp)
-
-def reddit_instance():
+def reddit_intance():
     # Define Reddit
-    reddit = praw.Reddit(client_id=os.environ['PRAW_ID'],client_secret=os.environ['PRAW_SECRET'],user_agent=os.environ['PRAW_AGENT'])
+    reddit = praw.Reddit(client_id=PRAW_ID,client_secret=PRAW_SECRET,user_agent=PRAW_AGENT)
     subreddit = reddit.subreddit('buildapcsales')
 
     return subreddit
@@ -41,25 +39,34 @@ def scrape(subreddit):
             submissions.append([submission.title, submission.link_flair_text, submission.id, submission.permalink, submission.url, datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S')])
             submissionCount += 1
     submissions = pd.DataFrame(submissions, columns=['title','flair','id','permalink','link','created'])
-    logging.info(str(submissionCount) + ' total submissions scraped')
+    print(str(submissionCount) + ' total submissions scraped')
 
     return submissions, today
+
+def main():
+    subreddit = reddit_intance()
+    submissions, today = scrape(subreddit)
+    upload_results = azure_upload(submissions,today)
+    
     
 def azure_upload(submissions,today):
     # Setup Azure Environment 
-    blob_service_client = BlobServiceClient.from_connection_string(os.environ['AZURE_STORAGE_CONNECTION_STRING'])
+    blob_service_client = BlobServiceClient.from_connection_string(AZ_CONNECT)
     local_path = "./scrapes"
-    local_file_name = '{}+{}.json'.format(today,random.randint(1,10000))
+    local_file_name = '{}.json'.format(today)
+    upload_file_path = os.path.join(local_path, local_file_name)
     container_name = 'scraped-reddit-data'
 
     # Export to JSON
-    jsonData = submissions.to_json(local_file_name)
+    jsonData = submissions.to_json(upload_file_path)
         
     # Create a blob client using the local file name as the name for the blob
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
 
     # Upload the created file
-    with open(local_file_name, "rb") as data:
+    with open(upload_file_path, "rb") as data:
         blob_client.upload_blob(data)
 
-    logging.info("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+    print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+
+main()
