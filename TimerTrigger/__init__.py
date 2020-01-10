@@ -7,17 +7,26 @@ import os
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 import random
 
-def main(mytimer: func.TimerRequest) -> None:
+#TODO: Remove pandas dependance for JSON
+
+def main(mytimer: func.TimerRequest, outToBlob: func.Out[func.InputStream]) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
         tzinfo=datetime.timezone.utc).isoformat()
     
     subreddit = reddit_instance()
     submissions, today = scrape(subreddit)
-    upload_results = azure_upload(submissions,today)
+    # upload_results = azure_upload(submissions,today)
+    jsonData = azure_upload(submissions,today)
+
     if mytimer.past_due:
         logging.info('The timer is past due!')
+    # Add logging 
+    logging.info('Python processed %s', jsonData)
+    logging.info('jsonData = %s', jsonData)
+    logging.info('submissions = %s', submissions)
 
-    logging.info('Python timer trigger function ran at %s', utc_timestamp)
+    # Save JSON to blob
+    outToBlob.set(submissions)
 
 def reddit_instance():
     # Define Reddit
@@ -55,11 +64,12 @@ def azure_upload(submissions,today):
     # Export to JSON
     jsonData = submissions.to_json(local_file_name)
         
-    # Create a blob client using the local file name as the name for the blob
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
+    # # Create a blob client using the local file name as the name for the blob
+    # blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
 
-    # Upload the created file
-    with open(local_file_name, "rb") as data:
-        blob_client.upload_blob(data)
+    # # Upload the created file
+    # with open(local_file_name, "rb") as data:
+    #     blob_client.upload_blob(data)
 
-    logging.info("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+    # logging.info("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+    return jsonData
