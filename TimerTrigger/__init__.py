@@ -33,7 +33,7 @@ def scrape(subreddit):
     lastScrape = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
     submissionCount = 0
     # Scrape
-    for submission in subreddit.new(limit=5):
+    for submission in subreddit.new(limit=None):
         # Skip posts that have expired or don't have flair
         if(submission.link_flair_text == None or submission.link_flair_text == 'Expired :table_flip:'):
             continue
