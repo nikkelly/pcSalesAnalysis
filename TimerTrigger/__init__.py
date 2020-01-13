@@ -1,13 +1,15 @@
 import datetime
 import logging
 import praw
-import pandas as pd
+# import pandas as pd
 import azure.functions as func
 import os
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 import random
+import json
 
 #TODO: Remove pandas dependance for JSON
+#TODO: Might be able to upload file to container with the same Body/Object items as AWS S3 (wsankey)
 
 def main(mytimer: func.TimerRequest, outToBlob: func.Out[func.InputStream]) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
@@ -16,13 +18,13 @@ def main(mytimer: func.TimerRequest, outToBlob: func.Out[func.InputStream]) -> N
     subreddit = reddit_instance()
     submissions, today = scrape(subreddit)
     # upload_results = azure_upload(submissions,today)
-    jsonData = azure_upload(submissions,today)
+    # jsonData = azure_upload(submissions,today)
 
     if mytimer.past_due:
         logging.info('The timer is past due!')
     # Add logging 
-    logging.info('Python processed %s', jsonData)
-    logging.info('jsonData = %s', jsonData)
+    # logging.info('Python processed %s', jsonData)
+    # logging.info('jsonData = %s', jsonData)
     logging.info('submissions = %s', submissions)
 
     # Save JSON to blob
@@ -49,27 +51,33 @@ def scrape(subreddit):
         if(datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S') > lastScrape.strftime('%Y-%m-%d %H:%M:%S')):
             submissions.append([submission.title, submission.link_flair_text, submission.id, submission.permalink, submission.url, datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S')])
             submissionCount += 1
-    submissions = pd.DataFrame(submissions, columns=['title','flair','id','permalink','link','created'])
-    logging.info(str(submissionCount) + ' total submissions scraped')
+
+    submissions = json.dumps(submissions)
+    
+    # submissions = pd.DataFrame(submissions, columns=['title','flair','id','permalink','link','created'])
+    # logging.info(str(submissionCount) + ' total submissions scraped')
 
     return submissions, today
     
-def azure_upload(submissions,today):
-    # Setup Azure Environment 
-    blob_service_client = BlobServiceClient.from_connection_string(os.environ['AZURE_STORAGE_CONNECTION_STRING'])
-    local_path = "./scrapes"
-    local_file_name = '{}+{}.json'.format(today,random.randint(1,10000))
-    container_name = 'scraped-reddit-data'
+# def azure_upload(submissions,today):
+#     # Setup Azure Environment 
+#     blob_service_client = BlobServiceClient.from_connection_string(os.environ['AZURE_STORAGE_CONNECTION_STRING'])
+#     # local_path = "./scrapes"
+#     # local_file_name = '{}+{}.json'.format(today,random.randint(1,10000))
+#     # container_name = 'scraped-reddit-data'
 
-    # Export to JSON
-    jsonData = submissions.to_json(local_file_name)
+#     # Export to JSON
+#     jsonData = json.dumps(submissions)
+
+#     # Export to JSON
+#     # jsonData = submissions.to_json(local_file_name)
         
-    # # Create a blob client using the local file name as the name for the blob
-    # blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
+#     # # Create a blob client using the local file name as the name for the blob
+#     # blob_client = blob_service_client.get_blob_client(container=container_name, blob=local_file_name)
 
-    # # Upload the created file
-    # with open(local_file_name, "rb") as data:
-    #     blob_client.upload_blob(data)
+#     # # Upload the created file
+#     # with open(local_file_name, "rb") as data:
+#     #     blob_client.upload_blob(data)
 
-    # logging.info("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
-    return jsonData
+#     # logging.info("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+#     return jsonData

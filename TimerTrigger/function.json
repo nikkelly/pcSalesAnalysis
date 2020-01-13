@@ -11,7 +11,7 @@
       "type": "blob",
       "direction": "out",
       "name": "outToBlob",
-      "path": "scraped-reddit-data/{name}",
+      "path": "scraped-reddit-data/{rand-guid}",
       "connection": "AzureWebJobsStorage"
     }
   ]
