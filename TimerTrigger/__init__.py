@@ -7,9 +7,6 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 import random
 import json
 
-#TODO: Remove pandas dependance for JSON
-#TODO: Might be able to upload file to container with the same Body/Object items as AWS S3 (wsankey)
-
 def main(mytimer: func.TimerRequest, outToBlob: func.Out[func.InputStream]) -> None:
     utc_timestamp = datetime.datetime.utcnow().replace(
         tzinfo=datetime.timezone.utc).isoformat()
@@ -19,8 +16,6 @@ def main(mytimer: func.TimerRequest, outToBlob: func.Out[func.InputStream]) -> N
 
     if mytimer.past_due:
         logging.info('The timer is past due!')
-    # Add logging 
-    logging.info('submissions = %s', submissions)
 
     # Save JSON to blob
     outToBlob.set(submissions)
@@ -46,7 +41,7 @@ def scrape(subreddit):
         if(datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S') > lastScrape.strftime('%Y-%m-%d %H:%M:%S')):
             submissions.append([submission.title, submission.link_flair_text, submission.id, submission.permalink, submission.url, datetime.datetime.utcfromtimestamp(submission.created_utc).strftime('%Y-%m-%d %H:%M:%S')])
             submissionCount += 1
-
+    logging.info('Submissions scraped: '+submissionCount)
     submissions = json.dumps(submissions)
     
     return submissions, today

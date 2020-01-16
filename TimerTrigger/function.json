@@ -5,13 +5,13 @@
       "name": "mytimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "0 * * * * *"
+      "schedule": "0 0 0 * * *"
     },
     {
       "type": "blob",
       "direction": "out",
       "name": "outToBlob",
-      "path": "scraped-reddit-data/{rand-guid}",
+      "path": "scraped-reddit-data/{datetime:MM-dd-yy}",
       "connection": "AzureWebJobsStorage"
     }
   ]
