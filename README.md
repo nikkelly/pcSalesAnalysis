@@ -1,5 +1,5 @@
 # Description
-This Azure Function will scrape /r/buildapcsales, perform some basic ETL and store the results in an Azure Blob. 
+This Azure Function written in Python that will scrape /r/buildapcsales, perform some basic ETL and store the results in an Azure Blob. 
 
 Created this as a way to build an example data pipeline that will scrape and store on a daily basis automatically. 
 
