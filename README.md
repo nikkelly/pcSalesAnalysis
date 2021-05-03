@@ -6,6 +6,6 @@ Created this as a way to build an example data pipeline that will scrape and sto
 ## Dataset
 Sample blob available here: [Link](https://pcsalesanalysisnew.blob.core.windows.net/scraped-reddit-data/01-01-21)
 
-Dataset container: [Link](https://pcsalesanalysisnew.blob.core.windows.net/scraped-reddit-data)
+Dataset container: [Link](https://pcsalesanalysisnew.blob.core.windows.net/scraped-reddit-data/?restype=container&comp=list)
 
 Reach out if you'd like the entire dataset!
